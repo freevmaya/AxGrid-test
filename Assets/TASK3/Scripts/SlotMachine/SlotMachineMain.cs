@@ -1,0 +1,213 @@
+using AxGrid;
+using AxGrid.Base;
+using AxGrid.Model;
+using System.Collections.Generic;
+using TASK3.SlotMachine.FSM;
+using UnityEngine;
+
+namespace TASK3.SlotMachine
+{
+    public class SlotMachineMain : MonoBehaviourExtBind
+    {
+        [Header("Slot Settings")]
+        [SerializeField] private int slotItemsCount = 20;
+        [SerializeField] private float itemHeight = 100f;
+        [SerializeField] private float maxScrollSpeed = 800f;
+        [SerializeField] private int accelSlotCount = 3;
+        [SerializeField] private int reduceSlotCount = 2;
+
+        [Header("References")]
+        [SerializeField] private RectTransform contentPanel;
+        [SerializeField] private GameObject slotItemPrefab;
+
+        private List<SlotItem> slotItems = new List<SlotItem>();
+        private float scrollPosition = 0f;
+        private float speed;
+        private float accelerate = 0f;
+
+        [OnAwake]
+        private void AwakeThis()
+        {
+            Log.Debug("SlotMachineMain Awake");
+            InitializeSlotItems();
+        }
+
+        private float calcAccelerate(float V, int count)
+        {
+            return Mathf.Pow(V, 2) / ((itemHeight - scrollPosition + itemHeight * count) * 2);
+        }
+
+        public void StartReduction()
+        {
+            accelerate = -calcAccelerate(speed, reduceSlotCount);
+        }
+
+        public void StartAccelerate()
+        {
+            accelerate = calcAccelerate(maxScrollSpeed, accelSlotCount);
+        }
+
+        [OnStart]
+        private void StartThis()
+        {
+            Log.Debug("SlotMachineMain Start");
+
+            // Инициализация FSM
+            Settings.Fsm = new AxGrid.FSM.FSM();
+            Settings.Fsm.Add(new SlotInitState());
+            Settings.Fsm.Add(new SlotIdleState());
+            Settings.Fsm.Add(new SlotSpinningState());
+            Settings.Fsm.Add(new SlotStoppingState(this));
+            Settings.Fsm.Add(new SlotResultState(this));
+
+            Settings.Fsm.Start("SlotInit");
+
+            // Подписываемся на события модели
+            Settings.Model.EventManager.AddAction("OnSpinStarted", OnSpinStarted);
+        }
+
+        [OnUpdate]
+        private void UpdateThis()
+        {
+            Settings.Fsm.Update(Time.deltaTime);
+            UpdateScroll();
+        }
+
+        private void Clear()
+        {
+            // Очищаем существующие элементы
+            foreach (Transform child in contentPanel)
+                Destroy(child.gameObject);
+            slotItems.Clear();
+        }
+
+        private void InitializeSlotItems()
+        {
+            Clear();
+            // Устанавливаем высоту контента
+            contentPanel.sizeDelta = new Vector2(contentPanel.sizeDelta.x, slotItemsCount * itemHeight);
+
+            // Создаем новые элементы
+            for (int i = 0; i < slotItemsCount; i++)
+            {
+                GameObject itemObj = Instantiate(slotItemPrefab, contentPanel);
+                SlotItem item = itemObj.GetComponent<SlotItem>();
+                item.SetItemData($"Item {i}");
+
+                slotItems.Add(item);
+            }
+            scrollPosition = 0;
+            updateItemPositions();
+        }
+
+        private void updateItemPositions()
+        {
+            float y = contentPanel.sizeDelta.y / 2;
+            // Применяем позицию ко всем элементам
+            for (int i = 0; i < slotItems.Count; i++)
+            {
+                float baseY = y - i * itemHeight;
+                float currentY = baseY - scrollPosition;
+
+                // Зацикливание для бесконечного скролла
+                if (currentY < -contentPanel.rect.height)
+                    currentY += slotItems.Count * itemHeight;
+
+                RectTransform rect = slotItems[i].GetComponent<RectTransform>();
+                rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, currentY);
+            }
+
+        }
+
+        private void Stop()
+        {
+            setSpeed(0);
+            accelerate = 0;
+            scrollPosition = Mathf.Round(scrollPosition / itemHeight) * itemHeight;
+            // Определяем результат
+            Settings.Fsm.Change("SlotResult");
+        }
+
+        private void setSpeed(float value)
+        {
+            value = Mathf.Min(value, maxScrollSpeed);
+            if (value != speed)
+            {
+                speed = value;
+                Settings.Model.EventManager.Invoke("OnSpeedChanged", speed);
+                Settings.Fsm.Invoke("OnSpeedChanged", speed);
+            }
+        }
+
+        private void updatePosition()
+        {
+            scrollPosition += speed * Time.deltaTime;
+            // Зацикливаем позицию
+            if (scrollPosition >= itemHeight)
+            {
+                scrollPosition -= itemHeight;
+                RepositionItems();
+            }
+            updateItemPositions();
+        }
+
+        private void UpdateScroll()
+        {
+            // Обновляем позицию скролла
+
+            if ((speed != 0) || (accelerate != 0)) {
+
+                updatePosition();
+
+                float new_speed = speed + accelerate * Time.deltaTime;
+
+                if ((accelerate < 0) && (new_speed < 0))
+                    Stop();
+                else setSpeed(new_speed);
+            }
+        }
+
+        private void RepositionItems()
+        {
+            int last = slotItems.Count - 1;
+            SlotItem tmp = slotItems[last];
+            slotItems.RemoveAt(last);
+            slotItems.Insert(0, tmp);
+
+            // Обновляем данные первого элемента
+            tmp.SetItemData($"New Item");
+        }
+
+        public SlotItem getMiddle()
+        {
+            return slotItems[slotItems.Count / 2];
+        }
+
+        private void OnSpinStarted()
+        {
+            setSpeed(0);
+            StartAccelerate();
+            Log.Debug("Spin started");
+        }
+
+        [Bind("OnStartClick")]
+        private void OnStartButtonClick()
+        {
+            Log.Debug("SlotMachineMain: Start button clicked");
+            Settings.Fsm.Invoke("StartSpin");
+        }
+
+        [Bind("OnStopClick")]
+        private void OnStopButtonClick()
+        {
+            Log.Debug("SlotMachineMain: Stop button clicked");
+            Settings.Fsm.Invoke("StopSpin", this);
+        }
+
+        [OnDestroy]
+        private void DestroyThis()
+        {
+            Settings.Model.EventManager.RemoveAction("OnSpinStarted", OnSpinStarted);
+        }
+    }
+}
