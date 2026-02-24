@@ -40,8 +40,8 @@ namespace TASK3.UI
             Settings.Model.EventManager.AddAction("OnSpinStopping", OnSpinStopping);
             Settings.Model.EventManager.AddAction("OnSlotResult", OnSlotResult);
             Settings.Model.EventManager.AddAction("OnStopTooEarly", OnStopTooEarly);
-            Settings.Model.EventManager.AddAction("OnItemSelected", OnItemSelected);
             Settings.Model.EventManager.AddAction("OnSpeedChanged", OnSpeedChanged);
+            Settings.Model.EventManager.AddAction("OnLastSelectedItemChanged", OnLastSelectedItem);
         }
 
         private void OnSlotIdle()
@@ -92,7 +92,7 @@ namespace TASK3.UI
             StartCoroutine(FlashText(statusText, Color.red, 0.5f));
         }
 
-        private void OnItemSelected()
+        private void OnLastSelectedItem()
         {
             SlotItem item = Settings.Model.Get("LastSelectedItem", null) as SlotItem;
             string itemName = item ? item.ItemName : "Неизвестно";
@@ -160,8 +160,8 @@ namespace TASK3.UI
             Settings.Model.EventManager.RemoveAction("OnSpinStopping", OnSpinStopping);
             Settings.Model.EventManager.RemoveAction("OnSlotResult", OnSlotResult);
             Settings.Model.EventManager.RemoveAction("OnStopTooEarly", OnStopTooEarly);
-            Settings.Model.EventManager.RemoveAction("OnItemSelected", OnItemSelected);
             Settings.Model.EventManager.RemoveAction("OnSpeedChanged", OnSpeedChanged);
+            Settings.Model.EventManager.RemoveAction("LastSelectedItem", OnLastSelectedItem);
         }
     }
 }
