@@ -70,6 +70,15 @@ namespace TASK3.SlotMachine
             Settings.Model.EventManager.AddAction("OnItemSelected", OnItemSelected);
         }
 
+        [OnDestroy]
+        private void OnDestory()
+        {
+            Settings.Model.EventManager.RemoveAction("OnSpinStarted", OnSpinStarted);
+            Settings.Model.EventManager.RemoveAction("OnSpinStopping", OnSpinStopping);
+            Settings.Model.EventManager.RemoveAction("OnCheckStopping", OnCheckStopping);
+            Settings.Model.EventManager.RemoveAction("OnItemSelected", OnItemSelected);
+        }
+
         private void OnItemSelected()
         {
             SlotItem selected = getMiddle();
