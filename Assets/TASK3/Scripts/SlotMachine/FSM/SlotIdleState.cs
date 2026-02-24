@@ -16,8 +16,6 @@ namespace TASK3.SlotMachine.FSM
             Settings.Model.Set("CanStart", true);
             Settings.Model.Set("CanStop", false);
 
-            // Убеждаемся, что скорость равна 0 через модель
-            Settings.Model.Set("CurrentScrollSpeed", 0f);
             Settings.Model.Set("SpinState", "Idle");
 
             // Отправляем событие в UI

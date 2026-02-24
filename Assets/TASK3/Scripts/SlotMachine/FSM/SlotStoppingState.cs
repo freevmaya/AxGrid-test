@@ -4,18 +4,13 @@ using AxGrid.FSM;
 namespace TASK3.SlotMachine.FSM
 {
     [State("SlotStopping")]
-    public class SlotStoppingState : SMBaseState
+    public class SlotStoppingState : FSMState
     {
-        public SlotStoppingState(SlotMachineMain slotMachineMain) : base(slotMachineMain)
-        {
-        }
 
         [Enter]
         private void EnterThis()
         {
             Log.Debug($"{Parent.CurrentStateName} ENTER");
-
-            main.StartReduction();
 
             // Блокируем обе кнопки во время остановки
             Settings.Model.Set("CanStart", false);
@@ -24,13 +19,18 @@ namespace TASK3.SlotMachine.FSM
 
             // Отправляем событие в UI
             Settings.Model.EventManager.Invoke("OnSpinStopping");
-            Settings.Model.EventManager.Invoke("OnSlotStopping");
         }
 
         [Exit]
         private void ExitThis()
         {
             Log.Debug($"{Parent.CurrentStateName} EXIT");
+        }
+
+        [Loop(0.01f)]
+        private void OnUpdate()
+        {
+            Settings.Model.EventManager.Invoke("OnCheckStopping");
         }
     }
 }

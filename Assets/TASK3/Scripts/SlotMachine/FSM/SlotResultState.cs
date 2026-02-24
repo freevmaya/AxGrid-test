@@ -4,18 +4,12 @@ using AxGrid.FSM;
 namespace TASK3.SlotMachine.FSM
 {
     [State("SlotResult")]
-    public class SlotResultState : SMBaseState
+    public class SlotResultState : FSMState
     {
-        public SlotResultState(SlotMachineMain slotMachineMain) : base(slotMachineMain)
-        {
-        }
-
         [Enter]
         private void EnterThis()
         {
             Log.Debug($"{Parent.CurrentStateName} ENTER");
-
-            Settings.Model.Set("LastSelectedItem", main.getMiddle());
             Settings.Model.Set("SpinState", "Result");
 
             // Блокируем кнопки на короткое время для показа результата

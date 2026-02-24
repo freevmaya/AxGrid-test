@@ -37,7 +37,7 @@ namespace TASK3.UI
             // Подписываемся на события модели
             Settings.Model.EventManager.AddAction("OnSlotIdle", OnSlotIdle);
             Settings.Model.EventManager.AddAction("OnSlotSpinning", OnSlotSpinning);
-            Settings.Model.EventManager.AddAction("OnSlotStopping", OnSlotStopping);
+            Settings.Model.EventManager.AddAction("OnSpinStopping", OnSpinStopping);
             Settings.Model.EventManager.AddAction("OnSlotResult", OnSlotResult);
             Settings.Model.EventManager.AddAction("OnStopTooEarly", OnStopTooEarly);
             Settings.Model.EventManager.AddAction("OnItemSelected", OnItemSelected);
@@ -47,7 +47,6 @@ namespace TASK3.UI
         private void OnSlotIdle()
         {
             SetStatus("Готов к запуску");
-            SetResult("");
             SetSpeed(0);
 
             if (glowCoroutine != null)
@@ -70,9 +69,11 @@ namespace TASK3.UI
 
             if (spinParticles != null)
                 spinParticles.Play();
+
+            SetResult("-");
         }
 
-        private void OnSlotStopping()
+        private void OnSpinStopping()
         {
             SetStatus("Остановка...");
         }
@@ -96,7 +97,7 @@ namespace TASK3.UI
             SlotItem item = Settings.Model.Get("LastSelectedItem", null) as SlotItem;
             string itemName = item ? item.ItemName : "Неизвестно";
 
-            SetResult($"Выпало: {itemName}");
+            SetResult(itemName);
         }
 
         private void OnSpeedChanged(params object[] args)
@@ -156,7 +157,7 @@ namespace TASK3.UI
         {
             Settings.Model.EventManager.RemoveAction("OnSlotIdle", OnSlotIdle);
             Settings.Model.EventManager.RemoveAction("OnSlotSpinning", OnSlotSpinning);
-            Settings.Model.EventManager.RemoveAction("OnSlotStopping", OnSlotStopping);
+            Settings.Model.EventManager.RemoveAction("OnSpinStopping", OnSpinStopping);
             Settings.Model.EventManager.RemoveAction("OnSlotResult", OnSlotResult);
             Settings.Model.EventManager.RemoveAction("OnStopTooEarly", OnStopTooEarly);
             Settings.Model.EventManager.RemoveAction("OnItemSelected", OnItemSelected);

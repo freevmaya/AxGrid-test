@@ -1,6 +1,7 @@
 using AxGrid;
 using AxGrid.Base;
 using AxGrid.Model;
+using System;
 using System.Collections.Generic;
 using TASK3.SlotMachine.FSM;
 using UnityEngine;
@@ -18,7 +19,7 @@ namespace TASK3.SlotMachine
 
         [Header("References")]
         [SerializeField] private RectTransform contentPanel;
-        [SerializeField] private GameObject slotItemPrefab;
+        [SerializeField] private SlotItem slotItemPrefab;
 
         private List<SlotItem> slotItems = new List<SlotItem>();
         private float scrollPosition = 0f;
@@ -37,13 +38,14 @@ namespace TASK3.SlotMachine
             return Mathf.Pow(V, 2) / ((itemHeight - scrollPosition + itemHeight * count) * 2);
         }
 
-        public void StartReduction()
+        private void startReduction()
         {
             accelerate = -calcAccelerate(speed, reduceSlotCount);
         }
 
-        public void StartAccelerate()
+        private void startAccelerate()
         {
+            setSpeed(0);
             accelerate = calcAccelerate(maxScrollSpeed, accelSlotCount);
         }
 
@@ -57,13 +59,43 @@ namespace TASK3.SlotMachine
             Settings.Fsm.Add(new SlotInitState());
             Settings.Fsm.Add(new SlotIdleState());
             Settings.Fsm.Add(new SlotSpinningState());
-            Settings.Fsm.Add(new SlotStoppingState(this));
-            Settings.Fsm.Add(new SlotResultState(this));
+            Settings.Fsm.Add(new SlotStoppingState());
+            Settings.Fsm.Add(new SlotResultState());
 
             Settings.Fsm.Start("SlotInit");
 
-            // Подписываемся на события модели
             Settings.Model.EventManager.AddAction("OnSpinStarted", OnSpinStarted);
+            Settings.Model.EventManager.AddAction("OnSpinStopping", OnSpinStopping);
+            Settings.Model.EventManager.AddAction("OnCheckStopping", OnCheckStopping);
+            Settings.Model.EventManager.AddAction("OnItemSelected", OnItemSelected);
+        }
+
+        private void OnItemSelected()
+        {
+            SlotItem selected = getMiddle();
+            Settings.Model.Set("LastSelectedItem", selected);
+            selected.Blink();
+        }
+
+        private void OnCheckStopping()
+        {
+            float adt = accelerate * Time.deltaTime;
+            float new_speed = speed + adt;
+
+            if (new_speed < adt)
+            {
+                Stop();
+            }
+        }
+
+        private void OnSpinStarted()
+        {
+            startAccelerate();
+        }
+
+        private void OnSpinStopping()
+        {
+            startReduction();
         }
 
         [OnUpdate]
@@ -90,11 +122,7 @@ namespace TASK3.SlotMachine
             // Создаем новые элементы
             for (int i = 0; i < slotItemsCount; i++)
             {
-                GameObject itemObj = Instantiate(slotItemPrefab, contentPanel);
-                SlotItem item = itemObj.GetComponent<SlotItem>();
-                item.SetItemData($"Item {i}");
-
-                slotItems.Add(item);
+                slotItems.Add(Instantiate(slotItemPrefab, contentPanel));
             }
             scrollPosition = 0;
             updateItemPositions();
@@ -119,11 +147,12 @@ namespace TASK3.SlotMachine
 
         }
 
-        private void Stop()
+        public void Stop()
         {
             setSpeed(0);
             accelerate = 0;
             scrollPosition = Mathf.Round(scrollPosition / itemHeight) * itemHeight;
+            updatePosition();
             // Определяем результат
             Settings.Fsm.Change("SlotResult");
         }
@@ -135,7 +164,6 @@ namespace TASK3.SlotMachine
             {
                 speed = value;
                 Settings.Model.EventManager.Invoke("OnSpeedChanged", speed);
-                Settings.Fsm.Invoke("OnSpeedChanged", speed);
             }
         }
 
@@ -154,16 +182,10 @@ namespace TASK3.SlotMachine
         private void UpdateScroll()
         {
             // Обновляем позицию скролла
-
-            if ((speed != 0) || (accelerate != 0)) {
-
+            setSpeed(speed + accelerate * Time.deltaTime);
+            if (speed != 0)
+            {
                 updatePosition();
-
-                float new_speed = speed + accelerate * Time.deltaTime;
-
-                if ((accelerate < 0) && (new_speed < 0))
-                    Stop();
-                else setSpeed(new_speed);
             }
         }
 
@@ -174,20 +196,13 @@ namespace TASK3.SlotMachine
             slotItems.RemoveAt(last);
             slotItems.Insert(0, tmp);
 
-            // Обновляем данные первого элемента
-            tmp.SetItemData($"New Item");
+            // Обновляем данные элемента
+            tmp.ResetData();
         }
 
-        public SlotItem getMiddle()
+        private SlotItem getMiddle()
         {
             return slotItems[slotItems.Count / 2];
-        }
-
-        private void OnSpinStarted()
-        {
-            setSpeed(0);
-            StartAccelerate();
-            Log.Debug("Spin started");
         }
 
         [Bind("OnStartClick")]
@@ -202,12 +217,6 @@ namespace TASK3.SlotMachine
         {
             Log.Debug("SlotMachineMain: Stop button clicked");
             Settings.Fsm.Invoke("StopSpin", this);
-        }
-
-        [OnDestroy]
-        private void DestroyThis()
-        {
-            Settings.Model.EventManager.RemoveAction("OnSpinStarted", OnSpinStarted);
         }
     }
 }

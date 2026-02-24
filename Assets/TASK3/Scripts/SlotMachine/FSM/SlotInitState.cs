@@ -14,9 +14,6 @@ namespace TASK3.SlotMachine.FSM
             // Инициализация модели
             Settings.Model.Set("CanStart", true);
             Settings.Model.Set("CanStop", false);
-            Settings.Model.Set("SpinStartTime", 0f);
-            Settings.Model.Set("SpinStopTime", 0f);
-            Settings.Model.Set("CurrentScrollSpeed", 0f);
 
             // Переходим в состояние ожидания
             Parent.Change("SlotIdle");

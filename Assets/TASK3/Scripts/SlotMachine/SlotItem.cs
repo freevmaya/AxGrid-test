@@ -14,32 +14,32 @@ namespace TASK3.SlotMachine
         }
         [SerializeField] private UnityEngine.UI.Image itemImage;
         [SerializeField] private TextMeshProUGUI itemText;
-        [SerializeField] private Color[] rarityColors;
+        [SerializeField] private Animation blockAnimation;
 
         [SerializeField] private List<slotData> itemSprites;
 
         private int itemId;
         public string ItemName => itemSprites[itemId].name;
 
-        public void SetItemData(string name)
+        private void Awake()
+        {
+            ResetData();
+        }
+
+        public void ResetData()
         {
             itemId = Random.Range(0, itemSprites.Count - 1);
 
             if (itemText != null)
-                itemText.text = name;
+                itemText.text = itemSprites[itemId].name;
 
-            if (itemImage != null && rarityColors.Length > 0)
-            {
-                // Устанавливаем цвет в зависимости от редкости
-                int colorIndex = Mathf.Clamp(itemId, 0, rarityColors.Length - 1);
-                itemImage.color = rarityColors[colorIndex];
-                itemImage.sprite = itemSprites[itemId].sprite;
-            }
+            itemImage.sprite = itemSprites[itemId].sprite;
         }
 
-        public int GetItemId()
+        public void Blink()
         {
-            return itemId;
+            if (blockAnimation)
+                blockAnimation.Play();
         }
     }
 }

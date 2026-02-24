@@ -115,7 +115,6 @@ namespace AxGrid.Tools.Binders{
 
 		private void OnClick(BaseEventData bd)
 		{
-			Log.Debug("CLICK!");
 			if (!cancel)
 				OnClick();
 			cancel = false;

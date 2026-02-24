@@ -18,7 +18,6 @@ namespace TASK3.SlotMachine.FSM
             Settings.Model.Set("CanStop", false); // Стоп станет доступным через 3 секунды
             Settings.Model.Set("SpinState", "Spinning");
 
-            // Отправляем событие в UI для запуска вращения
             Settings.Model.EventManager.Invoke("OnSpinStarted");
             Settings.Model.EventManager.Invoke("OnSlotSpinning");
         }
@@ -31,7 +30,7 @@ namespace TASK3.SlotMachine.FSM
         }
 
         [Bind("StopSpin")]
-        private void OnStartSpin()
+        private void OnStopSpin()
         {
             Log.Debug($"{Parent.CurrentStateName} StopSpin event received");
             Parent.Change("SlotStopping");
